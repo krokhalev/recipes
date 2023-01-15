@@ -1,0 +1,28 @@
+version: '3.9'
+services:
+  parser:
+    build:
+      context: .
+      dockerfile: Dockerfile.parser
+    restart: on-failure
+    depends_on:
+      - mongo
+    networks:
+      - recipes
+    volumes:
+      - ./:/app
+
+  mongo:
+    image: mongo:4.4
+    command: "mongod --dbpath /data/db"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    networks:
+      - recipes
+    volumes:
+      - .artifacts/mongo/:/data/db
+
+networks:
+  recipes:
+    name: recipes
