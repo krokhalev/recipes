@@ -5,11 +5,20 @@ import aiofiles
 from bs4 import BeautifulSoup as bs
 import os
 import json
+from motor import motor_asyncio
 
 URL = "https://eda.ru"
 HEADERS = {
     "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"}
+
+client = motor_asyncio.AsyncIOMotorClient("mongodb://mongo:mongo@mongo_dev:27017/?authMechanism=DEFAULT")
+db = client.recipes_db
+collection = db.recipes
+
+
+async def save_recipes_info(recipes_info: list):
+    await collection.insert_many(recipes_info)
 
 
 async def save_image(recipe_name: str, image_url: str, headers: dict) -> str:
@@ -52,10 +61,12 @@ async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
             "cooking_time": soup.find("div", class_="emotion-my9yfq").text.strip()
         }
 
-        try:
+        # recipe_id = soup.find("link", {'rel': 'canonical'}).get("href").split("-")[-1]
+        #
+        # recipe_page_info["_id"] = recipe_id
+
+        if not os.path.exists(f"recipes_data/{recipe_name}/"):
             os.mkdir(f"recipes_data/{recipe_name}/")
-        except FileExistsError:
-            print(f'directory "recipes_data/{recipe_name}/" already exist')
 
         raw_tags = soup.find("div", class_="emotion-fq1t0q").findAll("li", {'itemprop': 'itemListElement'})
         tags = []
@@ -165,9 +176,12 @@ async def main():
             break
         page += 1
 
-        recipes_info = await get_recipes_info(URL, recipes_urls, HEADERS)  # todo: add mongo driver
+        recipes_info = await get_recipes_info(URL, recipes_urls, HEADERS)
 
-        time.sleep(1 / 10)
+        mongo_loop = client.get_io_loop()
+        mongo_loop.run_until_complete(await save_recipes_info(recipes_info))
+
+        time.sleep(1)
 
 
 if __name__ == '__main__':

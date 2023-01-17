@@ -7,21 +7,44 @@ services:
     restart: on-failure
     depends_on:
       - mongo
+      - mongo_dev
     networks:
       - recipes
+    profiles:
+      - prod
+      - dev
     volumes:
-      - ./:/app
+      - ./recipes_data/:/app/recipes_data
 
   mongo:
     image: mongo:4.4
     command: "mongod --dbpath /data/db"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
     networks:
       - recipes
+    profiles:
+      - prod
     volumes:
+      - ./mongo/init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-mongo-init.js:ro
       - .artifacts/mongo/:/data/db
+
+  mongo_dev:
+    image: mongo:4.4
+    command: "mongod --dbpath /data/db"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+    networks:
+      - recipes
+    profiles:
+      - dev
+    volumes:
+      - ./mongo/init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-mongo-init.js:ro
+      - ./.artifacts/mongo/:/data/db
+    ports:
+      - 27017:27017
 
 networks:
   recipes:
