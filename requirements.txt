@@ -10,5 +10,6 @@ idna==3.4
 lxml==4.9.2
 motor==3.1.1
 multidict==6.0.4
+python-dotenv==0.21.0
 soupsieve==2.3.2.post1
 yarl==1.8.2
