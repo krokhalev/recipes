@@ -1,12 +1,14 @@
 version: '3.9'
+
 services:
+
   parser:
     build:
       context: .
       dockerfile: Dockerfile.parser
     restart: on-failure
     depends_on:
-      - mongo
+      - mongo_prod
       - mongo_dev
     networks:
       - recipes
@@ -14,28 +16,28 @@ services:
       - prod
       - dev
     volumes:
-      - ./recipes_data/:/app/recipes_data
+      - ./.artifacts/recipes_data/:/app/recipes_data
 
-  mongo:
+  mongo_prod:
     image: mongo:4.4
     command: "mongod --dbpath /data/db"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongo
-      - MONGO_INITDB_ROOT_PASSWORD=mongo
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     networks:
       - recipes
     profiles:
       - prod
     volumes:
       - ./mongo/init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-mongo-init.js:ro
-      - .artifacts/mongo/:/data/db
+      - ./.artifacts/mongo/:/data/db
 
   mongo_dev:
     image: mongo:4.4
     command: "mongod --dbpath /data/db"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongo
-      - MONGO_INITDB_ROOT_PASSWORD=mongo
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     networks:
       - recipes
     profiles:
