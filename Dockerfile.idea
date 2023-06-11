@@ -1,0 +1,10 @@
+FROM python:3.10-slim-buster
+
+RUN apt-get update && apt-get install -y gcc && apt-get clean
+
+ADD requirements.txt ./
+RUN pip install --upgrade pip && pip install -r requirements.txt
+#ADD freeze ./freeze
+#RUN pip install --upgrade pip && pip install -r requirements.txt --no-index --find-links="./freeze"
+
+CMD ["python"]

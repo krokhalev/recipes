@@ -1,6 +1,8 @@
-.PHONY: clean
-clean:
-	rm -rf .artifacts
+.PHONY: cleanup
+cleanup:
+	sudo rm -rf .artifacts
+	sudo rm -rf recipes_data/*
+	sudo touch recipes_data/.gitkeep
 
 #dev section
 .PHONY: build_dev
@@ -35,3 +37,7 @@ dump_prod:
 .PHONY: restore_prod
 restore_prod:
 	docker-compose exec -T mongo_prod sh -c 'mongorestore --authenticationDatabase admin -u mongo -p mongo --archive' < mongo/dump/db.dump
+
+.PHONY: idea_build
+idea_build:
+	docker build . -f Dockerfile.idea -t recipes_idea
