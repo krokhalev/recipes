@@ -131,3 +131,4 @@ dmypy.json
 .artifacts
 !/mongo/dump/.gitkeep
 /mongo/dump/db.dump
+/mongo/dump/recipes_db
