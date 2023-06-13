@@ -117,7 +117,7 @@ async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
         except AttributeError:
             logger.debug(f'recipe "{recipe_name}" does not have preview image')
 
-        if image_bytes != "":
+        if image_bytes != "" or image_bytes is not None:
             image_bytes = base64.b64encode(image_bytes).decode('utf-8')
         recipe_page_info["preview_image"] = image_bytes
         recipe_page_info["preview_image_path"] = preview_image_path
@@ -174,7 +174,7 @@ async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
             except IndexError:
                 logger.debug(f'{step_number} in recipe "{recipe_name}" does not have image')
 
-            if image_bytes != "":
+            if image_bytes != "" or image_bytes is not None:
                 image_bytes = base64.b64encode(image_bytes).decode('utf-8')
             step = {
                 step_number: {
