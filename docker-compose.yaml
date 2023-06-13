@@ -19,7 +19,7 @@ services:
       - ./.artifacts/recipes_data/:/app/recipes_data
 
   mongo_prod:
-    image: mongo:4.4
+    image: mongo:5.0
     command: "mongod --dbpath /data/db"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
@@ -33,7 +33,7 @@ services:
       - ./.artifacts/mongo/:/data/db
 
   mongo_dev:
-    image: mongo:4.4
+    image: mongo:5.0
     command: "mongod --dbpath /data/db"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
