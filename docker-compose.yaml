@@ -5,7 +5,7 @@ services:
   parser:
     build:
       context: .
-      dockerfile: Dockerfile.parser
+      dockerfile: parser/Dockerfile.parser
     restart: on-failure
     depends_on:
       - mongo_prod
@@ -15,8 +15,7 @@ services:
     profiles:
       - prod
       - dev
-    volumes:
-      - ./.artifacts/recipes_data/:/app/recipes_data
+#    user: 1000:1000
 
   mongo_prod:
     image: mongo:5.0
@@ -40,6 +39,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     networks:
       - recipes
+#    network_mode: host
     profiles:
       - dev
     volumes:
@@ -47,6 +47,18 @@ services:
       - ./.artifacts/mongo/:/data/db
     ports:
       - 27017:27017
+
+  mutator:
+    build:
+      context: .
+      dockerfile: mutator/Dockerfile.mutator
+    restart: on-failure
+    depends_on:
+      - mongo_dev
+    networks:
+      - recipes
+    profiles:
+      - dev
 
 networks:
   recipes:

@@ -1,0 +1,12 @@
+FROM python:3.8
+
+WORKDIR /app
+
+COPY .env ./.env
+COPY ./requirements.txt ./requirements.txt
+COPY ./mutator/ ./
+
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+CMD ["python3", "mutator.py"]

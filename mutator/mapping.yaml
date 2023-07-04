@@ -1,0 +1,69 @@
+mutated_count: 100
+
+recipe:
+  _id:
+      include_to_res: true
+      mutate_to_type: uuid
+
+  cooking_time:
+      name_after_mutate: cooking_time
+      include_to_res: false
+
+  description:
+      name_after_mutate: description
+      include_to_res: false
+
+  ingredients:
+      name_after_mutate: ingredients
+      include_to_res: false
+
+  nutritious:
+      name_after_mutate: nutrition
+      include_to_res: true
+      relation_fields:
+
+        calories:
+          name_after_mutate: calories
+          mutate_to_type: int
+
+        protein_content:
+          name_after_mutate: protein
+          mutate_to_type: int
+
+        fat_content:
+          name_after_mutate: fat
+          mutate_to_type: int
+
+        carbohydrate_content:
+          name_after_mutate: carbohydrate
+          mutate_to_type: int
+
+  portions:
+      name_after_mutate: portions
+      include_to_res: false
+      mutate_to_type: str
+
+  preview_image:
+      name_after_mutate: preview_image
+      include_to_res: false
+
+  recipe_hint:
+      name_after_mutate: recipe_hint
+      include_to_res: false
+
+  recipe_id:
+      name_after_mutate: recipe_id
+      include_to_res: false
+      mutate_to_type: str
+
+  recipe_name:
+      name_after_mutate: name
+      include_to_res: true
+
+  steps:
+      name_after_mutate: steps
+      include_to_res: false
+
+  tags:
+      name_after_mutate: tags
+      include_to_res: false
