@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import logging
 import base64
 
-load_dotenv()
+load_dotenv()  # todo add pipenv
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -29,34 +29,14 @@ def init_mongo_client() -> motor.motor_asyncio.AsyncIOMotorClient:
     username = os.getenv('MONGO_INITDB_ROOT_USERNAME')
     password = os.getenv('MONGO_INITDB_ROOT_PASSWORD')
     host = os.getenv('MONGO_HOST')
-    return motor.motor_asyncio.AsyncIOMotorClient(f"mongodb://{username}:{password}@{host}:27017/?authMechanism=DEFAULT")
+    return motor.motor_asyncio.AsyncIOMotorClient(
+        f"mongodb://{username}:{password}@{host}:27017/?authMechanism=DEFAULT")
 
 
 async def save_recipes_info(collection: motor.motor_asyncio.core.AgnosticCollection, recipes_info: list) -> None:
     for recipe in recipes_info:
         logger.debug(f"trying to save recipe {recipe['recipe_name']} to mongodb")
         await collection.update_one({"_id": recipe["recipe_id"]}, {"$setOnInsert": recipe}, upsert=True)
-
-
-async def save_recipe_page_info(recipe_page_info: dict) -> None:
-    logger.debug(f"trying to save recipe {recipe_page_info['recipe_name']} page info to local directory")
-    try:
-        json_obj_recipe_page_info = json.dumps(recipe_page_info, ensure_ascii=False)
-        async with aiofiles.open(f"recipes_data/{recipe_page_info['recipe_name']}/{recipe_page_info['recipe_name']}.json", 'w') as file:
-            await file.write(json_obj_recipe_page_info)
-    except Exception as ex:
-        logger.error(f"save recipe page info error: {ex}")
-
-
-async def save_image_locally(recipe_name: str, image_url: str, image_bytes: bytes) -> str:
-    logger.debug(f"trying to save recipe {recipe_name} image to local directory")
-    try:
-        async with aiofiles.open(f"recipes_data/{recipe_name}/" + "".join(image_url.split("/")[-3:]), 'wb') as image:
-            await image.write(image_bytes)
-    except Exception as ex:
-        logger.error(f"save image locally error: {ex}")
-
-    return f"recipes_data/{recipe_name}/" + "".join(image_url.split("/")[-3:])
 
 
 async def get_image(recipe_name: str, image_url: str, headers: dict) -> bytes:
@@ -69,13 +49,13 @@ async def get_image(recipe_name: str, image_url: str, headers: dict) -> bytes:
         logger.error(f"get image error: {ex}")
 
 
-async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
+async def get_recipes_info(recipes_urls: list) -> list:
     recipes_info = []
     for recipe_url in recipes_urls:
         logger.debug(f"trying to get recipe info by recipe url: {recipe_url}")
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url=url + recipe_url, headers=headers) as response:
+                async with session.get(url=URL + recipe_url, headers=HEADERS) as response:
                     soup = bs(await response.text(), "lxml")
 
         except aiohttp.client.TooManyRedirects as ex:
@@ -99,31 +79,28 @@ async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
         recipe_id = soup.find("link", {'rel': 'canonical'}).get("href").split("-")[-1]
         recipe_page_info["recipe_id"] = recipe_id
 
-        if not os.path.exists(f"recipes_data/{recipe_name}/"):
-            os.mkdir(f"recipes_data/{recipe_name}/")
-
         raw_tags = soup.find("div", class_="emotion-fq1t0q").findAll("li", {'itemprop': 'itemListElement'})
         tags = []
         for tag in raw_tags[1:]:
             tags.append(tag.getText())
         recipe_page_info["tags"] = tags
 
-        preview_image_path = "no_path"
         image_bytes = ""
         try:
             preview_image_url = soup.find("span", {'itemprop': 'resultPhoto'}).get("content")
-            image_bytes = await get_image(recipe_name, preview_image_url, headers)
-            preview_image_path = await save_image_locally(recipe_name, preview_image_url, image_bytes)
+            image_bytes = await get_image(recipe_name, preview_image_url, HEADERS)
+
+            if image_bytes != "" or image_bytes is not None:
+                image_bytes = base64.b64encode(image_bytes).decode('utf-8')
         except AttributeError:
             logger.debug(f'recipe "{recipe_name}" does not have preview image')
+        except TypeError:
+            logger.debug(f'recipe "{recipe_name}" does not have preview image')
 
-        if image_bytes != "" or image_bytes is not None:
-            image_bytes = base64.b64encode(image_bytes).decode('utf-8')
         recipe_page_info["preview_image"] = image_bytes
-        recipe_page_info["preview_image_path"] = preview_image_path
 
         try:
-            recipe_page_info["description"] = soup.find("span", class_="emotion-1x1q7i2").text.strip().replace('\xa0', ' ')
+            recipe_page_info["description"] = soup.find("span", class_="emotion-aiknw3").text.strip().replace('\xa0', ' ')
         except AttributeError:
             recipe_page_info["description"] = "no_recipe_description"
             logger.debug(f'recipe "{recipe_name}" does not have description')
@@ -161,25 +138,25 @@ async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
             step_number = element.findChildren("span", recursive=False)[0].get("id")
             step_description = element.find("span", {'itemprop': 'text'}).getText()
 
-            step_image_path = "no_path"
             image_bytes = ""
             try:
                 step_image_url = element.find("div", class_="emotion-1x955v4").findChildren(
                     "picture", recursive=False)[0].findChildren("img", recursive=False)[0].get("src")
                 if step_image_url is not None:
-                    image_bytes = await get_image(recipe_name, step_image_url, headers)
-                    step_image_path = await save_image_locally(recipe_name, step_image_url, image_bytes)
+                    image_bytes = await get_image(recipe_name, step_image_url, HEADERS)
+
+                if image_bytes != "" or image_bytes is not None:
+                    image_bytes = base64.b64encode(image_bytes).decode('utf-8')
             except AttributeError:
                 logger.debug(f'{step_number} in recipe "{recipe_name}" does not have image')
             except IndexError:
                 logger.debug(f'{step_number} in recipe "{recipe_name}" does not have image')
+            except TypeError:
+                logger.debug(f'{step_number} in recipe "{recipe_name}" does not have image')
 
-            if image_bytes != "" or image_bytes is not None:
-                image_bytes = base64.b64encode(image_bytes).decode('utf-8')
             step = {
                 step_number: {
                     "step_image": image_bytes,
-                    "step_image_path": step_image_path,
                     "step_description": step_description.replace('\xa0', ' ')
                 }
             }
@@ -193,20 +170,18 @@ async def get_recipes_info(url: str, recipes_urls: list, headers: dict) -> list:
             recipe_page_info["recipe_hint"] = "no_recipe_hint"
             logger.debug(f'recipe "{recipe_name}" does not have recipe hint')
 
-        await save_recipe_page_info(recipe_page_info)
-
         recipes_info.append(recipe_page_info)
 
-        time.sleep(1)
+        time.sleep(5)
 
     return recipes_info
 
 
-async def get_recipes_urls(url: str, headers: dict, page: int) -> list:
+async def get_recipes_urls(page: int) -> list:
     logger.debug(f"trying to get recipes urls from page: {page}")
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url=f"{url}/recepty?page={page}", headers=headers) as response:
+            async with session.get(url=f"{URL}/recepty?page={page}", headers=HEADERS) as response:
                 soup = bs(await response.text(), "lxml")
                 recipes_urls = soup.findAll("a", class_="emotion-18hxz5k")
 
@@ -226,19 +201,19 @@ async def main():
     db = client.recipes_db
     collection = db.recipes
 
-    page = 1
+    page = 4
     while True:
-        recipes_urls = await get_recipes_urls(URL, HEADERS, page)
+        recipes_urls = await get_recipes_urls(page)
         if len(recipes_urls) == 0:
             break
 
-        recipes_info = await get_recipes_info(URL, recipes_urls, HEADERS)
+        recipes_info = await get_recipes_info(recipes_urls)
 
         await save_recipes_info(collection, recipes_info)
 
         page += 1
 
-        time.sleep(1)
+        time.sleep(5)
 
     logger.info("parser stop")
 
